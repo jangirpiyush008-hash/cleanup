@@ -185,26 +185,43 @@
         </div>
       </div>
 
-      <details style="margin-top:24px;font-size:13.5px;color:var(--ink-muted)">
+      <details style="margin-top:24px;font-size:13.5px;color:var(--ink-muted)" open>
         <summary style="cursor:pointer;font-weight:600;color:var(--ink);padding:6px 0">
-          Seeing “Mac Cleanup is damaged” or “can’t be opened”?
+          First launch: how to get past “Apple could not verify”
         </summary>
         <div style="margin-top:10px;padding:14px 16px;background:var(--panel);border:1px solid var(--rule);border-radius:12px;line-height:1.65">
-          <p style="margin-bottom:8px">
+          <p style="margin-bottom:12px">
             macOS shows this on any app that isn’t signed with a paid Apple Developer ID.
-            The app is safe — Apple just hasn’t verified it.
+            Mac Cleanup is safe — Apple just hasn’t verified it. Any of these fixes work:
           </p>
-          <p style="margin-bottom:8px"><strong>The fix (one time, ~10 seconds):</strong></p>
-          <ol style="margin:0 0 8px 20px;padding:0">
-            <li>Open <strong>Terminal</strong> (Cmd + Space → “Terminal”).</li>
-            <li>Paste this and press Return:
+
+          <p style="margin:14px 0 6px"><strong>Option 1 · System Settings</strong> (any macOS version)</p>
+          <ol style="margin:0 0 8px 20px;padding:0;font-size:13px">
+            <li>Click <em>Done</em> on the warning dialog.</li>
+            <li>Open <strong>System Settings → Privacy &amp; Security</strong>.</li>
+            <li>Scroll to the bottom — you’ll see “Mac Cleanup was blocked to protect your Mac”.</li>
+            <li>Click <strong>Open Anyway</strong> → enter Touch ID / password.</li>
+          </ol>
+
+          <p style="margin:14px 0 6px"><strong>Option 2 · Terminal</strong> (fastest — 10 seconds)</p>
+          <ol style="margin:0 0 8px 20px;padding:0;font-size:13px">
+            <li>Open <strong>Terminal</strong> (Cmd + Space → type “Terminal”).</li>
+            <li>Paste and press Return:
               <pre style="margin:6px 0 0;padding:10px 12px;background:var(--ground);border:1px solid var(--rule);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:12px;overflow-x:auto"><code>xattr -cr /Applications/Mac\ Cleanup.app</code></pre>
             </li>
-            <li>Open Mac Cleanup normally.</li>
+            <li>Double-click Mac Cleanup normally. Warning is gone forever.</li>
           </ol>
-          <p style="margin:0;font-size:12.5px">
-            What this does: strips the “quarantine” tag macOS puts on downloaded files.
-            Once removed, the app opens normally forever.
+
+          <p style="margin:14px 0 6px"><strong>Option 3 · Right-click Open</strong> (older macOS)</p>
+          <ol style="margin:0 0 8px 20px;padding:0;font-size:13px">
+            <li>In Finder → Applications → <strong>right-click</strong> Mac Cleanup → <strong>Open</strong>.</li>
+            <li>The dialog will show an <em>Open</em> button. Click it.</li>
+            <li>(If Sonoma/Sequoia hides the Open button — use Option 1 or 2.)</li>
+          </ol>
+
+          <p style="margin:14px 0 0;font-size:12px;color:var(--ink-quiet)">
+            <strong>Why this is needed:</strong> until we buy an Apple Developer certificate ($99/yr),
+            macOS treats Mac Cleanup as “unidentified”. The app itself is unchanged either way.
           </p>
         </div>
       </details>
@@ -286,7 +303,7 @@
           btn.href = macUrl;
           btn.setAttribute('download', MAC_ASSET);
           lbl.textContent = 'Download for Mac';
-          note.textContent = 'macOS 12+ · Apple Silicon + Intel · 3.6 MB · first launch: right-click → Open';
+          note.textContent = 'macOS 12+ · Apple Silicon + Intel · 3.6 MB · first launch: see the guide below';
         } else if (isWin) {
           // No Windows build yet. Disable the button and label honestly.
           btn.removeAttribute('href');
