@@ -1,0 +1,12 @@
+# Everything Railway doesn't need to serve the landing page.
+node_modules/
+src-tauri/target/
+src-tauri/gen/
+src-tauri/WixTools/
+SwiftReference/
+.build/
+build/
+dist/
+.git/
+.DS_Store
+*.swp

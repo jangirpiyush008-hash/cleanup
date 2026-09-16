@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mac Cleanup — Safely free up disk space</title>
+    <meta name="description" content="A local, opinionated-safe disk cleaner for Mac and Windows. Scans read-only, moves only what you approve to Trash. Nothing leaves your computer." />
+    <meta name="theme-color" content="#c8710d" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,500;6..72,600&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --ground: #faf7f2;
+        --panel: #f0ebe0;
+        --ink: #1a1613;
+        --ink-muted: #6d6459;
+        --ink-quiet: #a49a8c;
+        --rule: #e3ddd0;
+        --accent: #c8710d;
+        --accent-ink: #7a4408;
+        --accent-wash: #f6e6cf;
+        --safe: #1f6b3c;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --ground: #14110e; --panel: #1c1814;
+          --ink: #f0ebe4; --ink-muted: #a49a8c; --ink-quiet: #6d6459;
+          --rule: #2a2622; --accent: #e69646; --accent-ink: #f5b878; --accent-wash: #241c0f;
+          --safe: #4fa870;
+        }
+      }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html, body { height: 100%; }
+      body {
+        background: var(--ground); color: var(--ink);
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        font-size: 16px; line-height: 1.6;
+        -webkit-font-smoothing: antialiased;
+      }
+      main { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
+      .brand {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-family: 'JetBrains Mono', ui-monospace, monospace;
+        font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+        color: var(--accent-ink); font-weight: 600;
+      }
+      .brand::before {
+        content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--accent);
+      }
+      h1 {
+        font-family: 'Newsreader', ui-serif, Georgia, serif;
+        font-weight: 500;
+        font-size: clamp(36px, 6vw, 60px);
+        line-height: 1.02; letter-spacing: -0.015em;
+        margin: 20px 0 14px; text-wrap: balance;
+      }
+      h1 em { font-style: italic; color: var(--accent-ink); }
+      .lede {
+        font-family: 'Newsreader', ui-serif, Georgia, serif;
+        font-weight: 400; font-size: 20px; line-height: 1.4;
+        color: var(--ink-muted); max-width: 42ch; margin-bottom: 28px;
+        font-variation-settings: 'opsz' 24;
+      }
+      .cta {
+        display: inline-flex; align-items: center; gap: 10px;
+        background: var(--accent); color: #fff;
+        padding: 18px 32px; border-radius: 999px;
+        font-size: 16px; font-weight: 700;
+        text-decoration: none;
+        box-shadow: 0 12px 32px rgba(200, 113, 13, 0.32);
+        border: none; cursor: pointer;
+        transition: transform 80ms ease;
+      }
+      .cta:hover { transform: translateY(-1px); }
+      .cta:active { transform: translateY(0); }
+      .cta-secondary {
+        display: inline-flex; align-items: center; gap: 8px;
+        margin-left: 14px;
+        color: var(--ink-muted); font-weight: 600; text-decoration: none;
+        font-size: 14px;
+      }
+      .cta-secondary:hover { color: var(--ink); }
+      .os-note {
+        margin-top: 12px; font-size: 12.5px; color: var(--ink-quiet);
+        font-family: 'JetBrains Mono', monospace;
+      }
+      .trust {
+        margin-top: 56px;
+        display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--rule);
+        border-radius: 14px;
+        padding: 18px 20px;
+      }
+      .card-eyebrow {
+        font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+        color: var(--accent-ink); font-weight: 700; margin-bottom: 4px;
+      }
+      .card-body {
+        font-size: 14px; color: var(--ink-muted); line-height: 1.55;
+      }
+      .card-body strong { color: var(--ink); font-weight: 600; }
+      .how {
+        margin-top: 44px;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+      }
+      .step {
+        padding: 14px 16px;
+        border-left: 2px solid var(--accent);
+        background: var(--accent-wash);
+        border-radius: 0 10px 10px 0;
+      }
+      .step-num {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px; color: var(--accent-ink); font-weight: 700;
+      }
+      .step-title { font-weight: 600; margin: 2px 0 3px; }
+      .step-desc { font-size: 13px; color: var(--ink-muted); }
+      footer {
+        margin-top: 60px; padding-top: 24px;
+        border-top: 1px solid var(--rule);
+        font-size: 12.5px; color: var(--ink-quiet);
+        display: flex; gap: 18px; flex-wrap: wrap; align-items: center;
+      }
+      footer a { color: var(--ink-muted); text-decoration: none; font-weight: 500; }
+      footer a:hover { color: var(--ink); }
+      .status-pill {
+        display: inline-flex; align-items: center; gap: 6px;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 11px; padding: 4px 10px; border-radius: 999px;
+        background: var(--accent-wash); color: var(--accent-ink);
+        font-weight: 600;
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * { transition-duration: 0.01ms !important; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="brand">Mac Cleanup</div>
+
+      <h1>Free up space, <em>without guessing</em> what's important.</h1>
+      <p class="lede">
+        Scans your computer locally, tells you exactly what's taking up
+        space, and only ever moves what you approve to Trash. Runs entirely
+        on your machine — nothing ever leaves it.
+      </p>
+
+      <div>
+        <a id="downloadBtn" class="cta" href="https://github.com/jangirpiyush008-hash/cleanup/releases">
+          <span id="downloadLabel">Free up space</span>
+          <span aria-hidden="true">→</span>
+        </a>
+        <a class="cta-secondary" href="https://github.com/jangirpiyush008-hash/cleanup">View source</a>
+        <div class="os-note" id="osNote">Detecting your OS…</div>
+      </div>
+
+      <div class="how">
+        <div class="step">
+          <div class="step-num">01</div>
+          <div class="step-title">Download</div>
+          <div class="step-desc">One installer for Mac, one for Windows. ~10 MB.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">02</div>
+          <div class="step-title">Scan</div>
+          <div class="step-desc">Read-only. Nothing is touched.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
+          <div class="step-title">Review</div>
+          <div class="step-desc">See every finding with an honest safety label.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">04</div>
+          <div class="step-title">Approve</div>
+          <div class="step-desc">Items go to Trash. You can restore them anytime.</div>
+        </div>
+      </div>
+
+      <div class="trust">
+        <div class="card">
+          <div class="card-eyebrow">Privacy</div>
+          <div class="card-body">
+            <strong>Nothing leaves your computer.</strong>
+            No analytics, no telemetry, no cloud upload. Ever.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow">Safety</div>
+          <div class="card-body">
+            Documents, Desktop, iCloud, Keychains — <strong>always protected.</strong>
+            Every delete re-validates the path in the moment before it acts.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow">Reversible</div>
+          <div class="card-body">
+            Items go to <strong>Trash / Recycle Bin</strong>. Never rm.
+            Trash is never emptied automatically.
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-eyebrow">Open source</div>
+          <div class="card-body">
+            <strong>Every line of code</strong> is on GitHub.
+            13 automated safety tests pass on every build.
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 40px;">
+        <span class="status-pill" id="statusPill">Early access · v0.1</span>
+      </div>
+
+      <footer>
+        <span>© 2026 StackPicks</span>
+        <a href="https://github.com/jangirpiyush008-hash/cleanup">GitHub</a>
+        <a href="https://github.com/jangirpiyush008-hash/cleanup/blob/main/README.md">Docs</a>
+        <a href="mailto:stackpicks.dev@gmail.com">Contact</a>
+      </footer>
+    </main>
+
+    <script>
+      // Detect OS and set the download button label + link.
+      (function () {
+        const ua = navigator.userAgent || '';
+        const plat = (navigator.userAgentData?.platform || navigator.platform || '').toLowerCase();
+        const btn = document.getElementById('downloadBtn');
+        const lbl = document.getElementById('downloadLabel');
+        const note = document.getElementById('osNote');
+
+        // Detection order: mobile → not supported; Windows / macOS → binaries.
+        const isMac     = /mac/.test(plat) || /Mac OS/.test(ua);
+        const isWin     = /win/.test(plat) || /Windows/.test(ua);
+        const isMobile  = /android|iphone|ipad|ipod/i.test(ua);
+
+        if (isMobile) {
+          lbl.textContent = 'Desktop only';
+          btn.setAttribute('aria-disabled', 'true');
+          btn.style.opacity = '0.55';
+          btn.style.pointerEvents = 'none';
+          note.textContent = 'Mac Cleanup runs on macOS and Windows. Open this page on your computer to download.';
+          return;
+        }
+
+        // Both platforms currently point at the releases page — GitHub Actions
+        // will attach the .dmg + .exe / .msi installers on the next tagged
+        // release. Once a stable release is live, swap for direct asset URLs.
+        const releasesUrl = 'https://github.com/jangirpiyush008-hash/cleanup/releases/latest';
+        btn.href = releasesUrl;
+
+        if (isMac) {
+          lbl.textContent = 'Download for Mac';
+          note.textContent = 'macOS 12 or later · Apple Silicon + Intel · ~10 MB';
+        } else if (isWin) {
+          lbl.textContent = 'Download for Windows';
+          note.textContent = 'Windows 10 or later · 64-bit · ~10 MB';
+        } else {
+          lbl.textContent = 'View releases';
+          note.textContent = 'Choose the installer for your OS on GitHub.';
+        }
+      })();
+    </script>
+  </body>
+</html>
