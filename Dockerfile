@@ -1,5 +1,5 @@
-# Landing-page image for Railway. Zero dependencies — the landing page
-# is served by a ~60-line static server using only Node built-ins.
+# Landing-page image for Railway. Bundles the .dmg into the image at
+# build time so the download link never leaves our own domain.
 #
 # When a Dockerfile is present at the repo root, Railway uses it directly
 # and skips Railpack auto-detection entirely.
@@ -8,11 +8,22 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy only the landing directory. The Rust Tauri source has nothing to
-# do with the web deploy.
+# curl is used only during build to fetch the Mac installer from
+# GitHub Releases. Not present in the runtime image after this line.
+RUN apk add --no-cache curl
+
 COPY landing ./landing
 
-# Railway sets PORT dynamically; the server reads it from env.
+# Pull the current .dmg from the GitHub release. The .dmg lives on GitHub
+# Releases as the canonical source; we mirror it into our container so
+# visitors download from our own domain. Bump the release URL whenever
+# a new version ships.
+ARG DMG_URL=https://github.com/jangirpiyush008-hash/cleanup/releases/download/v0.1.0/MacCleanup-0.1.0-aarch64.dmg
+ARG DMG_NAME=MacCleanup-0.1.0-aarch64.dmg
+RUN mkdir -p landing/downloads && \
+    curl -fsSL "$DMG_URL" -o "landing/downloads/$DMG_NAME" && \
+    ls -lh "landing/downloads/$DMG_NAME"
+
 ENV NODE_ENV=production
 EXPOSE 3000
 

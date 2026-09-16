@@ -21,3 +21,6 @@ src-tauri/WixTools/
 # Distribution outputs
 dist/
 build/
+
+# Landing-page downloads mirror — populated by Docker build via curl.
+landing/downloads/

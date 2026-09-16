@@ -23,7 +23,14 @@ const MIME = {
   '.ico':  'image/x-icon',
   '.txt':  'text/plain; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
+  '.dmg':  'application/x-apple-diskimage',
+  '.exe':  'application/vnd.microsoft.portable-executable',
+  '.msi':  'application/x-msi',
+  '.zip':  'application/zip',
 };
+
+// Extensions that should always download (never render inline).
+const DOWNLOAD_EXTS = new Set(['.dmg', '.exe', '.msi', '.zip']);
 
 const server = createServer(async (req, res) => {
   try {
@@ -48,12 +55,20 @@ const server = createServer(async (req, res) => {
 
     const buf = await readFile(target);
     const ext = extname(target).toLowerCase();
-    res.writeHead(200, {
+    const filename = target.split('/').pop() || 'download';
+
+    const headers = {
       'Content-Type': MIME[ext] || 'application/octet-stream',
       'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600',
       'X-Content-Type-Options': 'nosniff',
       'Referrer-Policy': 'strict-origin-when-cross-origin',
-    });
+    };
+    if (DOWNLOAD_EXTS.has(ext)) {
+      // Force download regardless of browser previewing behavior.
+      headers['Content-Disposition'] = `attachment; filename="${filename}"`;
+    }
+
+    res.writeHead(200, headers);
     res.end(buf);
   } catch (err) {
     res.writeHead(500);
