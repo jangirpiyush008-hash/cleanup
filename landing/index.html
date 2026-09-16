@@ -283,77 +283,102 @@
     </main>
 
     <script>
-      // Detect OS and set the download button label + link.
-      (function () {
-        const ua = navigator.userAgent || '';
-        const plat = (navigator.userAgentData?.platform || navigator.platform || '').toLowerCase();
-        const btn = document.getElementById('downloadBtn');
-        const lbl = document.getElementById('downloadLabel');
+      // Manifest-driven download selection. The server exposes /api/downloads
+      // listing every file present in landing/downloads/. When CI produces
+      // a new .exe or .apk and Docker mirrors it into that directory, this
+      // page's buttons for that platform light up automatically — no code
+      // change or redeploy needed.
+      (async function () {
+        const btn  = document.getElementById('downloadBtn');
+        const lbl  = document.getElementById('downloadLabel');
         const note = document.getElementById('osNote');
 
-        // Detection order: mobile → not supported; Windows / macOS → binaries.
+        const ua   = navigator.userAgent || '';
+        const plat = (navigator.userAgentData?.platform || navigator.platform || '').toLowerCase();
+
         const isMac     = /mac/.test(plat) || /Mac OS/.test(ua);
         const isWin     = /win/.test(plat) || /Windows/.test(ua);
-        const isMobile  = /android|iphone|ipad|ipod/i.test(ua);
+        const isAndroid = /android/i.test(ua);
+        const isIOS     = /iphone|ipad|ipod/i.test(ua);
 
-        if (isMobile) {
-          lbl.textContent = 'Open on your Mac';
-          btn.removeAttribute('href');
-          btn.setAttribute('role', 'button');
-          btn.setAttribute('aria-disabled', 'true');
-          btn.style.opacity = '0.65';
-          btn.style.pointerEvents = 'none';
-          note.textContent = "You're on a phone. Mac Cleanup runs on your computer — open this link on macOS to download.";
-          // Small nicety: offer to copy the current URL for easy send-to-computer.
-          try {
-            const copyBtn = document.createElement('button');
-            copyBtn.className = 'cta-secondary';
-            copyBtn.style.background = 'transparent';
-            copyBtn.style.border = 'none';
-            copyBtn.style.cursor = 'pointer';
-            copyBtn.style.font = 'inherit';
-            copyBtn.style.marginLeft = '0';
-            copyBtn.style.display = 'inline-flex';
-            copyBtn.style.alignItems = 'center';
-            copyBtn.style.gap = '6px';
-            copyBtn.textContent = '📋 Copy this page link';
-            copyBtn.addEventListener('click', async () => {
-              try {
-                await navigator.clipboard.writeText(location.href);
-                copyBtn.textContent = '✓ Copied — paste it on your Mac';
-              } catch { copyBtn.textContent = '(long-press the URL to copy)'; }
-            });
-            btn.insertAdjacentElement('afterend', copyBtn);
-          } catch {}
-          return;
-        }
+        // Ask the server what installers are available.
+        let files = [];
+        try {
+          const r = await fetch('/api/downloads', { cache: 'no-store' });
+          if (r.ok) files = (await r.json()).files || [];
+        } catch {}
 
-        // Same-origin download paths — the server bundles the .dmg into the
-        // container at build time and serves it with Content-Disposition:
-        // attachment. Browser downloads directly; github.com is never in
-        // the URL bar.
-        const MAC_ASSET = 'MacCleanup-0.1.0-universal.dmg';
-        const macUrl = `/downloads/${MAC_ASSET}`;
+        const pick = (extList) => files.find((f) => extList.some((e) => f.name.toLowerCase().endsWith(e)));
+        const macFile = pick(['.dmg']);
+        const winFile = pick(['.exe', '.msi']);
+        const apkFile = pick(['.apk']);
 
-        if (isMac) {
-          btn.href = macUrl;
-          btn.setAttribute('download', MAC_ASSET);
-          lbl.textContent = 'Download for Mac';
-          note.textContent = 'macOS 12+ · Apple Silicon + Intel · 3.6 MB · first launch: see the guide below';
-        } else if (isWin) {
-          // No Windows build yet. Disable the button and label honestly.
+        const mb = (b) => (b / (1024 * 1024)).toFixed(1) + ' MB';
+        const disable = (msg) => {
           btn.removeAttribute('href');
           btn.setAttribute('role', 'button');
           btn.setAttribute('aria-disabled', 'true');
           btn.style.opacity = '0.55';
           btn.style.pointerEvents = 'none';
-          lbl.textContent = 'Windows — coming soon';
-          note.textContent = 'Windows build ships once GitHub Actions runs. Mac is available now.';
+          note.textContent = msg;
+        };
+        const enable = (file, label, extraNote) => {
+          const url = `/downloads/${encodeURIComponent(file.name)}`;
+          btn.href = url;
+          btn.setAttribute('download', file.name);
+          lbl.textContent = label;
+          note.textContent = `${mb(file.size)} · ${extraNote}`;
+        };
+
+        // ─── iOS (Apple locks us out of a cleaner category — honest state) ───
+        if (isIOS) {
+          disable('iOS apps can’t clean other apps’ storage (Apple sandbox). Use Settings → General → iPhone Storage instead.');
+          lbl.textContent = 'iOS: not supported by design';
+          return;
+        }
+
+        // ─── Android ─────────────────────────────────────────────────────
+        if (isAndroid) {
+          if (apkFile) {
+            enable(apkFile, 'Download for Android', 'sideload · enable “Install unknown apps” for your browser');
+          } else {
+            disable("Android APK ships once the build workflow runs. Mac + Windows come first.");
+            lbl.textContent = 'Android — coming soon';
+          }
+          return;
+        }
+
+        // ─── macOS ───────────────────────────────────────────────────────
+        if (isMac) {
+          if (macFile) {
+            enable(macFile, 'Download for Mac', 'Apple Silicon + Intel · first launch: see the guide below');
+          } else {
+            disable('Mac build not yet available.');
+            lbl.textContent = 'Mac — coming soon';
+          }
+          return;
+        }
+
+        // ─── Windows ─────────────────────────────────────────────────────
+        if (isWin) {
+          if (winFile) {
+            enable(winFile, 'Download for Windows', 'Windows 10 or later · 64-bit');
+          } else {
+            disable('Windows build ships once the CI workflow runs. Mac is available now.');
+            lbl.textContent = 'Windows — coming soon';
+          }
+          return;
+        }
+
+        // ─── Unknown OS (Linux, ChromeOS, etc.) ──────────────────────────
+        if (macFile) {
+          const url = `/downloads/${encodeURIComponent(macFile.name)}`;
+          btn.href = url;
+          btn.setAttribute('download', macFile.name);
+          lbl.textContent = 'Download Mac version';
+          note.textContent = 'Only Mac / Windows / Android are supported right now.';
         } else {
-          btn.href = macUrl;
-          btn.setAttribute('download', MAC_ASSET);
-          lbl.textContent = 'Download for Mac (Apple Silicon)';
-          note.textContent = "Pick a Mac to install. Windows build is on the way.";
+          disable('No installer available yet — check back after the first CI build.');
         }
       })();
     </script>

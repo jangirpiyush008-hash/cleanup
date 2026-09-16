@@ -2,7 +2,7 @@
 // runs on Node 20+. Railway will `node landing/server.js`.
 
 import { createServer } from 'node:http';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, readdir, stat } from 'node:fs/promises';
 import { extname, join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -36,6 +36,29 @@ const server = createServer(async (req, res) => {
   try {
     // Strip query string, normalize, and prevent path escapes.
     const urlPath = decodeURIComponent((req.url || '/').split('?')[0]);
+
+    // Manifest of installer files currently available in landing/downloads/.
+    // The landing page uses this to know which platform buttons to enable —
+    // Mac / Windows / Android all light up automatically the moment the
+    // matching file is dropped into that directory by the Docker build.
+    if (urlPath === '/api/downloads') {
+      const dir = join(ROOT, 'downloads');
+      const entries = await readdir(dir).catch(() => []);
+      const list = [];
+      for (const name of entries) {
+        try {
+          const s = await stat(join(dir, name));
+          if (s.isFile()) list.push({ name, size: s.size });
+        } catch {}
+      }
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-cache',
+      });
+      res.end(JSON.stringify({ files: list }));
+      return;
+    }
+
     const rel = urlPath === '/' ? 'index.html' : urlPath.replace(/^\/+/, '');
     const filePath = resolve(join(ROOT, rel));
 

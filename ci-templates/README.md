@@ -1,42 +1,66 @@
 # CI templates
 
-The GitHub Actions build workflow lives here rather than in
-`.github/workflows/` because our current push token doesn't carry the
-`workflow` scope. GitHub refuses to accept modifications to files under
-`.github/workflows/` without that scope.
+Contains the GitHub Actions workflow that builds **macOS + Windows + Android**
+in parallel and attaches the artifacts to a GitHub Release on any `v*` tag push.
 
-## Activate the workflow (60 seconds, one of two ways)
+**Why it's here, not in `.github/workflows/`**: our current push token
+doesn't carry the `workflow` scope. GitHub refuses direct pushes that
+touch `.github/workflows/*` without that scope. The workflow content is
+identical either way — GitHub simply won't accept it via git without a
+scoped token.
 
-### Option A · Via the GitHub website (no new token needed)
+## Activate in 60 seconds via the GitHub website (no new token needed)
 
-1. Open the repo on the web:
-   <https://github.com/jangirpiyush008-hash/cleanup>
+1. Open the repo on the web: <https://github.com/jangirpiyush008-hash/cleanup>
 2. Click **Add file → Create new file**.
-3. In the filename field, type: `.github/workflows/build.yml`
-4. Copy the contents of `ci-templates/build.yml` (this directory) and paste them in.
-5. Scroll down, click **Commit changes** → **Commit directly to `main`**.
+3. In the filename field, type exactly: `.github/workflows/build.yml`
+4. Copy the contents of `ci-templates/build.yml` (this directory) and paste in.
+5. Scroll down → **Commit changes** → *Commit directly to `main`*.
 
-Done. The workflow will run on the next push to `main` or any pushed tag.
+That's it. Once committed, the workflow runs on every push to `main`
+and on any `v*` tag. To trigger a full release build:
 
-### Option B · Regenerate a PAT with `workflow` scope
+```bash
+git tag v0.1.1
+git push origin v0.1.1
+```
 
-1. <https://github.com/settings/tokens> → **Generate new token (classic)**.
-2. Tick both `repo` and `workflow`.
+GitHub Actions then produces:
+- **macOS**: `Mac Cleanup_0.1.1_universal.dmg` (~4 MB)
+- **Windows**: `Mac Cleanup_0.1.1_x64-setup.exe` (~4 MB, NSIS installer)
+- **Android**: `MacCleanup-v0.1.1-universal.apk` (~15 MB, debug-signed)
+
+All three are attached to a draft release. Publish the release → the
+landing page's download buttons for each OS start working automatically
+(Docker rebuilds pull them into the container).
+
+## What Android currently is
+
+The APK is built from the same Tauri codebase as the Mac / Windows app.
+On a phone it opens and shows the UI, but the current scanners target
+Mac / Windows paths (`~/Library/Caches`, `AppData\Local`, etc.), so it
+finds nothing on a real Android device.
+
+The **infrastructure** (build + sign + release + host) is fully wired.
+The **Android-specific scanners** (Downloads, WhatsApp Media, DCIM,
+duplicate photos, unused apps) are the next 1-week body of work — worth
+doing only if Android is a real product commitment.
+
+For Play Store distribution the debug-signed APK is not sufficient —
+you'll need to configure a release keystore + Play Store upload key.
+See <https://tauri.app/develop/sign/android/> for the walkthrough.
+
+## Alternative: regenerate a PAT with `workflow` scope
+
+If you'd rather push the file from your terminal instead of the web UI:
+
+1. <https://github.com/settings/tokens> → **Generate new token (classic)**
+2. Tick both `repo` and `workflow`
 3. Locally:
    ```bash
    cd MacCleanup
    git mv ci-templates/build.yml .github/workflows/build.yml
-   git commit -m "Add cross-platform build workflow"
+   git commit -m "Enable cross-platform build workflow"
    git push https://jangirpiyush008-hash:NEW_TOKEN@github.com/jangirpiyush008-hash/cleanup.git main
    ```
-
-Then rotate the token when you're done.
-
-## What the workflow does
-
-- Triggers on push to `main`, on any `v*` tag, and on manual dispatch.
-- Runs a matrix: `macos-latest` (builds universal `.dmg`) and `windows-latest`
-  (builds `.msi` + `.exe` NSIS installer).
-- Uses `tauri-apps/tauri-action` to build the app and — on tags — attach
-  the installers to a draft release.
-- Free tier of Actions covers this comfortably; expect ~15 min per platform.
+4. Rotate the token when you're done.

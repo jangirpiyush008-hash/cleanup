@@ -1,4 +1,13 @@
-name: Build (macOS + Windows)
+# Cross-platform build workflow — macOS universal DMG, Windows NSIS installer,
+# Android APK. Triggered on push to main, on any v* tag, and on manual dispatch.
+# On tagged pushes it publishes a GitHub release with all three artifacts.
+#
+# Activation: because our current push token lacks the `workflow` scope,
+# this file lives in ci-templates/ rather than .github/workflows/. To
+# enable it, copy the contents into .github/workflows/build.yml via the
+# GitHub website (Add file → Create new file → path .github/workflows/build.yml).
+
+name: Build (macOS · Windows · Android)
 
 on:
   push:
@@ -7,39 +16,24 @@ on:
   workflow_dispatch: {}
 
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
-          - platform: 'windows-latest'
-            args: ''
-
-    runs-on: ${{ matrix.platform }}
+  # ─── macOS ──────────────────────────────────────────────────────
+  macos:
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Install Rust
+      - name: Rust
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
-
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
       - name: Rust cache
         uses: swatinem/rust-cache@v2
-        with:
-          workspaces: './src-tauri -> target'
-
-      - name: Setup Node
+        with: { workspaces: './src-tauri -> target' }
+      - name: Node
         uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install frontend deps
+        with: { node-version: '20' }
+      - name: Install deps
         run: npm ci || npm install
-
-      - name: Build Tauri app
+      - name: Build macOS universal DMG
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -48,4 +42,78 @@ jobs:
           releaseName: 'Mac Cleanup ${{ github.ref_name }}'
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}
+          args: --target universal-apple-darwin
+
+  # ─── Windows ────────────────────────────────────────────────────
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rust
+        uses: dtolnay/rust-toolchain@stable
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with: { workspaces: './src-tauri -> target' }
+      - name: Node
+        uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Install deps
+        run: npm ci || npm install
+      - name: Build Windows installer
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Mac Cleanup ${{ github.ref_name }}'
+          releaseDraft: true
+          prerelease: false
+          args: ''
+
+  # ─── Android ────────────────────────────────────────────────────
+  # Produces a debug-signed APK (installable via sideload) — good for
+  # side-loading during development and pre-Play-Store testing.
+  # Play Store distribution requires additional signing config (keystore
+  # + Google Play upload key). See tauri-apps.org/develop/sign/android.
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Node
+        uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - name: Java 17
+        uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-34 build-tools;34.0.0 ndk;26.1.10909125'
+      - name: Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with: { workspaces: './src-tauri -> target' }
+      - name: Install deps
+        run: npm ci || npm install
+      - name: Init Tauri Android project
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125
+        run: npx tauri android init
+      - name: Build Android APK (debug-signed)
+        env:
+          NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/26.1.10909125
+        run: npx tauri android build --apk --debug
+      - name: Rename APK
+        run: |
+          cp src-tauri/gen/android/app/build/outputs/apk/universal/debug/app-universal-debug.apk \
+             MacCleanup-${{ github.ref_name }}-universal.apk
+      - name: Attach APK to release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: MacCleanup-${{ github.ref_name }}-universal.apk
+          draft: true
