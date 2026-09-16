@@ -251,21 +251,32 @@
           return;
         }
 
-        // Both platforms currently point at the releases page — GitHub Actions
-        // will attach the .dmg + .exe / .msi installers on the next tagged
-        // release. Once a stable release is live, swap for direct asset URLs.
-        const releasesUrl = 'https://github.com/jangirpiyush008-hash/cleanup/releases/latest';
-        btn.href = releasesUrl;
+        // Direct asset URLs. `releases/latest/download/<file>` is GitHub's
+        // stable redirect — it always resolves to the current latest
+        // release's asset with that filename.
+        const REPO = 'jangirpiyush008-hash/cleanup';
+        const MAC_ASSET = 'MacCleanup-0.1.0-aarch64.dmg';
+        const WIN_ASSET = null; // Windows build ships when GitHub Actions runs
+
+        const macUrl = `https://github.com/${REPO}/releases/latest/download/${MAC_ASSET}`;
+        const releasesUrl = `https://github.com/${REPO}/releases/latest`;
 
         if (isMac) {
+          btn.href = macUrl;
+          btn.setAttribute('download', MAC_ASSET);
           lbl.textContent = 'Download for Mac';
-          note.textContent = 'macOS 12 or later · Apple Silicon + Intel · ~10 MB';
+          note.textContent = 'macOS 12+ · Apple Silicon · 1.5 MB · first launch: right-click → Open';
         } else if (isWin) {
-          lbl.textContent = 'Download for Windows';
-          note.textContent = 'Windows 10 or later · 64-bit · ~10 MB';
+          // No Windows build yet. Point at the releases page (which will
+          // have the .exe once GitHub Actions runs) and label honestly.
+          btn.href = releasesUrl;
+          lbl.textContent = 'Windows — coming soon';
+          btn.style.opacity = '0.7';
+          note.textContent = 'Windows build ships once GitHub Actions runs. Mac is available now.';
         } else {
+          btn.href = releasesUrl;
           lbl.textContent = 'View releases';
-          note.textContent = 'Choose the installer for your OS on GitHub.';
+          note.textContent = 'Pick the installer for your OS on GitHub.';
         }
       })();
     </script>
