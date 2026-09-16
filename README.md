@@ -105,18 +105,32 @@ git push origin v0.1.0
 
 ## Scanners currently shipped
 
+**Package managers & caches**
 - `NpmCacheScanner` — `~/.npm`
 - `BrowserCacheScanner` — Chrome, Safari, Firefox, Arc, Brave, Edge
   (macOS + Windows path sets)
-- `TempFilesScanner` — per-user temp dirs
-- `AppCacheScanner` — non-browser app caches under `~/Library/Caches` /
-  `AppData\Local`
+- `TempFilesScanner` — per-user temp directories
+- `AppCacheScanner` — non-browser app caches under `~/Library/Caches`
+  / `AppData\Local`
 - `LogsScanner` — `~/Library/Logs` (macOS)
+- `EditorCacheScanner` — VS Code, Cursor, JetBrains IDEs, Sublime
 - `DevCacheScanner` — Xcode DerivedData, CocoaPods, Yarn, pnpm, pip,
-  Gradle, Cargo, Playwright (both platforms where relevant)
+  Gradle, Cargo, Playwright
+
+**Developer heavy hitters**
+- `HomebrewScanner` — `~/Library/Caches/Homebrew` (safe) plus Cellar
+  / Caskroom / var visible-but-protected
+- `XcodeSimulatorsScanner` — simulator devices + runtime caches
+- `DockerScanner` — Docker.raw / ext4.vhdx and Docker Desktop app data
+
+**Personal (always safe)**
+- `IosBackupsScanner` — iPhone / iPad backups (always Protected;
+  surfaced only so you know they exist)
+- `LargeFilesScanner` — files > 500 MB in Downloads / Movies / Desktop
+  (always Protected — this app never deletes personal files)
 
 Adding a new scanner: implement the `Scanner` trait in
-`src-tauri/src/scanners/` and register it in `all_scanners()`.
+`src-tauri/src/scanners/`, then register it in `all_scanners()`.
 
 ## Distributing to another Mac / PC
 

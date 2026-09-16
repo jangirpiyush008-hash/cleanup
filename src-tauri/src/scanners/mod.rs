@@ -10,6 +10,12 @@ pub mod temp_files;
 pub mod app_cache;
 pub mod logs;
 pub mod dev_cache;
+pub mod homebrew;
+pub mod xcode_sims;
+pub mod docker;
+pub mod ios_backups;
+pub mod editor_cache;
+pub mod large_files;
 
 pub struct ScanOutcome {
     pub items: Vec<ScanItem>,
@@ -31,5 +37,11 @@ pub fn all_scanners() -> Vec<Box<dyn Scanner>> {
         Box::new(app_cache::AppCacheScanner),
         Box::new(logs::LogsScanner),
         Box::new(dev_cache::DevCacheScanner),
+        Box::new(homebrew::HomebrewScanner),
+        Box::new(xcode_sims::XcodeSimulatorsScanner),
+        Box::new(docker::DockerScanner),
+        Box::new(ios_backups::IosBackupsScanner),
+        Box::new(editor_cache::EditorCacheScanner),
+        Box::new(large_files::LargeFilesScanner),
     ]
 }
