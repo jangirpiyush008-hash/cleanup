@@ -18,8 +18,8 @@ COPY landing ./landing
 # Releases as the canonical source; we mirror it into our container so
 # visitors download from our own domain. Bump the release URL whenever
 # a new version ships.
-ARG DMG_URL=https://github.com/jangirpiyush008-hash/cleanup/releases/download/v0.1.0/MacCleanup-0.1.0-aarch64.dmg
-ARG DMG_NAME=MacCleanup-0.1.0-aarch64.dmg
+ARG DMG_URL=https://github.com/jangirpiyush008-hash/cleanup/releases/download/v0.1.0/MacCleanup-0.1.0-universal.dmg
+ARG DMG_NAME=MacCleanup-0.1.0-universal.dmg
 RUN mkdir -p landing/downloads && \
     curl -fsSL "$DMG_URL" -o "landing/downloads/$DMG_NAME" && \
     ls -lh "landing/downloads/$DMG_NAME"
