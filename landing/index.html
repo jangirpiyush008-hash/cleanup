@@ -166,24 +166,48 @@
         <div class="step">
           <div class="step-num">01</div>
           <div class="step-title">Download</div>
-          <div class="step-desc">One installer for Mac, one for Windows. ~10 MB.</div>
+          <div class="step-desc">Save the DMG. Drag Mac Cleanup to Applications.</div>
         </div>
         <div class="step">
           <div class="step-num">02</div>
+          <div class="step-title">First launch</div>
+          <div class="step-desc">Right-click Mac Cleanup in Applications → Open → Open.</div>
+        </div>
+        <div class="step">
+          <div class="step-num">03</div>
           <div class="step-title">Scan</div>
           <div class="step-desc">Read-only. Nothing is touched.</div>
         </div>
         <div class="step">
-          <div class="step-num">03</div>
-          <div class="step-title">Review</div>
-          <div class="step-desc">See every finding with an honest safety label.</div>
-        </div>
-        <div class="step">
           <div class="step-num">04</div>
           <div class="step-title">Approve</div>
-          <div class="step-desc">Items go to Trash. You can restore them anytime.</div>
+          <div class="step-desc">Selected items go to Trash. Restore anytime.</div>
         </div>
       </div>
+
+      <details style="margin-top:24px;font-size:13.5px;color:var(--ink-muted)">
+        <summary style="cursor:pointer;font-weight:600;color:var(--ink);padding:6px 0">
+          Seeing “Mac Cleanup is damaged” or “can’t be opened”?
+        </summary>
+        <div style="margin-top:10px;padding:14px 16px;background:var(--panel);border:1px solid var(--rule);border-radius:12px;line-height:1.65">
+          <p style="margin-bottom:8px">
+            macOS shows this on any app that isn’t signed with a paid Apple Developer ID.
+            The app is safe — Apple just hasn’t verified it.
+          </p>
+          <p style="margin-bottom:8px"><strong>The fix (one time, ~10 seconds):</strong></p>
+          <ol style="margin:0 0 8px 20px;padding:0">
+            <li>Open <strong>Terminal</strong> (Cmd + Space → “Terminal”).</li>
+            <li>Paste this and press Return:
+              <pre style="margin:6px 0 0;padding:10px 12px;background:var(--ground);border:1px solid var(--rule);border-radius:8px;font-family:'JetBrains Mono',monospace;font-size:12px;overflow-x:auto"><code>xattr -cr /Applications/Mac\ Cleanup.app</code></pre>
+            </li>
+            <li>Open Mac Cleanup normally.</li>
+          </ol>
+          <p style="margin:0;font-size:12.5px">
+            What this does: strips the “quarantine” tag macOS puts on downloaded files.
+            Once removed, the app opens normally forever.
+          </p>
+        </div>
+      </details>
 
       <div class="trust">
         <div class="card">

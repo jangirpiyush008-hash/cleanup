@@ -10,6 +10,7 @@
     "frontendDist": "../src"
   },
   "app": {
+    "withGlobalTauri": true,
     "windows": [
       {
         "title": "Mac Cleanup",
@@ -25,7 +26,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost"
+      "csp": null
     }
   },
   "bundle": {
@@ -45,7 +46,7 @@
     "copyright": "© 2026 StackPicks",
     "macOS": {
       "minimumSystemVersion": "12.0",
-      "hardenedRuntime": true
+      "hardenedRuntime": false
     },
     "windows": {
       "certificateThumbprint": null,

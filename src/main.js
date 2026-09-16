@@ -1,7 +1,20 @@
 // Entry point. Loads app state, mounts the phase-driven router.
-// Uses Tauri's IPC — accessible via `window.__TAURI__.core.invoke`.
+// Uses Tauri's IPC via `window.__TAURI__.core.invoke` (requires
+// `withGlobalTauri: true` in tauri.conf.json).
 
-const { invoke } = window.__TAURI__.core;
+// Fail loudly instead of silently blanking the window if the Tauri API
+// isn't reachable (rare — but easier to debug than an empty screen).
+function invokeSafe(cmd, args) {
+  if (!window.__TAURI__ || !window.__TAURI__.core || typeof window.__TAURI__.core.invoke !== 'function') {
+    const err = new Error(
+      'Tauri IPC bridge not available. Try quitting and reopening Mac Cleanup.'
+    );
+    console.error(err);
+    return Promise.reject(err);
+  }
+  return window.__TAURI__.core.invoke(cmd, args);
+}
+const invoke = invokeSafe;
 
 // ─── State ────────────────────────────────────────────────────────
 const state = {
@@ -454,9 +467,31 @@ async function refreshVolume() {
   try { state.volume = await invoke('volume_stats'); } catch {}
 }
 
+// ─── Fatal-error surface ──────────────────────────────────────────
+function showFatal(msg) {
+  const root = document.getElementById('app');
+  if (!root) return;
+  root.innerHTML = `
+    <div class="screen col gap-3" style="justify-content:center;align-items:center;text-align:center">
+      <h1 class="serif" style="font-size:24px;color:var(--danger)">Something went wrong.</h1>
+      <p class="muted" style="max-width:52ch">${escapeHTML(msg)}</p>
+      <p class="mono muted" style="font-size:11px">
+        If this persists, quit and reopen Mac Cleanup — or open an issue on GitHub.
+      </p>
+    </div>`;
+}
+window.addEventListener('error', (e) => {
+  console.error(e);
+  showFatal(e.message || 'Unexpected error.');
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error(e);
+  showFatal((e.reason && (e.reason.message || String(e.reason))) || 'Unexpected error.');
+});
+
 // ─── Boot ─────────────────────────────────────────────────────────
 (async function boot() {
-  try { state.meta = await invoke('app_meta'); } catch {}
-  await refreshVolume();
+  try { state.meta = await invoke('app_meta'); } catch (e) { console.warn('app_meta failed:', e); }
+  try { await refreshVolume(); } catch (e) { console.warn('volume_stats failed:', e); }
   render();
 })();
