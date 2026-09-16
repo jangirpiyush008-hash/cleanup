@@ -39,6 +39,19 @@
         -webkit-font-smoothing: antialiased;
       }
       main { max-width: 780px; margin: 0 auto; padding: 40px 24px 80px; }
+      @media (max-width: 640px) {
+        main { padding: 24px 18px 64px; }
+        h1 { font-size: 34px; margin: 16px 0 10px; }
+        .lede { font-size: 17px; margin-bottom: 22px; }
+        .cta { padding: 16px 24px; font-size: 15px; }
+        .cta-secondary { display: block; margin: 12px 0 0; }
+        .os-note { font-size: 11.5px; }
+        .how { gap: 10px; }
+        .step { padding: 12px 14px; }
+        .trust { gap: 10px; }
+        .card { padding: 14px 16px; }
+        footer { flex-direction: column; align-items: flex-start; gap: 8px; }
+      }
       .brand {
         display: inline-flex; align-items: center; gap: 8px;
         font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -284,11 +297,34 @@
         const isMobile  = /android|iphone|ipad|ipod/i.test(ua);
 
         if (isMobile) {
-          lbl.textContent = 'Desktop only';
+          lbl.textContent = 'Open on your Mac';
+          btn.removeAttribute('href');
+          btn.setAttribute('role', 'button');
           btn.setAttribute('aria-disabled', 'true');
-          btn.style.opacity = '0.55';
+          btn.style.opacity = '0.65';
           btn.style.pointerEvents = 'none';
-          note.textContent = 'Mac Cleanup runs on macOS and Windows. Open this page on your computer to download.';
+          note.textContent = "You're on a phone. Mac Cleanup runs on your computer — open this link on macOS to download.";
+          // Small nicety: offer to copy the current URL for easy send-to-computer.
+          try {
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'cta-secondary';
+            copyBtn.style.background = 'transparent';
+            copyBtn.style.border = 'none';
+            copyBtn.style.cursor = 'pointer';
+            copyBtn.style.font = 'inherit';
+            copyBtn.style.marginLeft = '0';
+            copyBtn.style.display = 'inline-flex';
+            copyBtn.style.alignItems = 'center';
+            copyBtn.style.gap = '6px';
+            copyBtn.textContent = '📋 Copy this page link';
+            copyBtn.addEventListener('click', async () => {
+              try {
+                await navigator.clipboard.writeText(location.href);
+                copyBtn.textContent = '✓ Copied — paste it on your Mac';
+              } catch { copyBtn.textContent = '(long-press the URL to copy)'; }
+            });
+            btn.insertAdjacentElement('afterend', copyBtn);
+          } catch {}
           return;
         }
 
